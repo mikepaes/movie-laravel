@@ -1,0 +1,52 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: docuser
+        uid: 1000
+      context: ./
+      dockerfile: Dockerfile
+    image: movie
+    container_name: movie-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - movie
+
+  db:
+    image: mysql:5.7
+    container_name: movie-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: movie
+      MYSQL_ROOT_PASSWORD: movie_pwd
+      MYSQL_PASSWORD: movie_pwd
+      MYSQL_USER: movie_user
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - movie
+
+  nginx:
+    image: nginx:alpine
+    container_name: movie-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d
+    networks:
+      - movie
+    environment:
+      - NGINX_HOST=movie.dev
+      - NGINX_PORT=80
+
+networks:
+  movie:
+    driver: bridge
